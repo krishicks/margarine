@@ -18,6 +18,12 @@ func main() {
 	type Simple interface {
 		A(a, b int) int
 		B() os.Signal
+		Embedded
+		io.Writer
+	}
+
+	type Embedded interface {
+		C()
 	}
 	`
 

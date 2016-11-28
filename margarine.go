@@ -3,6 +3,7 @@ package margarine
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -73,11 +74,41 @@ func Structify(src []byte, opts StructifyOpts) ([]byte, error) {
 		return nil, errors.New("could not find interface")
 	}
 
+	structObj := ast.NewObj(ast.Typ, structName)
+	recvObj := ast.NewObj(ast.Typ, recvName)
+
+	genDecl := &ast.GenDecl{
+		Tok: token.TYPE,
+		Specs: []ast.Spec{
+			&ast.TypeSpec{
+				Name: &ast.Ident{
+					Name: structObj.Name,
+					Obj:  structObj,
+				},
+				Type: &ast.StructType{
+					Fields: &ast.FieldList{
+						List: nil,
+					},
+				},
+			},
+		},
+	}
+
+	funcDecls := getFuncDecls(structObj, recvObj, obj, []ast.Decl{})
+
+	decls := []ast.Decl{
+		genDecl,
+	}
+
+	for i := range funcDecls {
+		decls = append(decls, funcDecls[i])
+	}
+
 	f = &ast.File{
 		Name: &ast.Ident{
 			Name: packageName,
 		},
-		Decls: getDecls(structName, recvName, obj),
+		Decls: decls,
 	}
 
 	fset = token.NewFileSet()
@@ -96,7 +127,9 @@ func Structify(src []byte, opts StructifyOpts) ([]byte, error) {
 	return out, nil
 }
 
-func getDecls(structName, recvName string, o *ast.Object) []ast.Decl {
+func getFuncDecls(structObj, recvObj, o *ast.Object, funcDecls []ast.Decl) []ast.Decl {
+	newFuncDecls := []ast.Decl{}
+
 	typeSpec, ok := o.Decl.(*ast.TypeSpec)
 	if !ok {
 		panic("not ok")
@@ -107,72 +140,53 @@ func getDecls(structName, recvName string, o *ast.Object) []ast.Decl {
 		panic("not ok")
 	}
 
-	structObj := ast.NewObj(ast.Typ, structName)
-	recvObj := ast.NewObj(ast.Typ, recvName)
-
-	decls := []ast.Decl{
-		&ast.GenDecl{
-			Tok: token.TYPE,
-			Specs: []ast.Spec{
-				&ast.TypeSpec{
-					Name: &ast.Ident{
-						Name: structName,
-						Obj:  structObj,
-					},
-					Type: &ast.StructType{
-						Fields: &ast.FieldList{
-							List: nil,
+	for _, field := range typ.Methods.List {
+		switch v := field.Type.(type) {
+		case *ast.FuncType:
+			funcDecl := &ast.FuncDecl{
+				Recv: &ast.FieldList{
+					List: []*ast.Field{
+						{
+							Names: []*ast.Ident{
+								{
+									Name: recvObj.Name,
+									Obj:  recvObj,
+								},
+							},
+							Type: &ast.StarExpr{
+								X: &ast.Ident{
+									Name: structObj.Name,
+									Obj:  structObj,
+								},
+							},
 						},
 					},
 				},
-			},
-		},
-	}
+				Name: &ast.Ident{
+					Name: field.Names[0].Name,
+					Obj:  nil,
+				},
+				Type: &ast.FuncType{
+					Params:  v.Params,
+					Results: v.Results,
+				},
+				Body: &ast.BlockStmt{
+					List: nil,
+				},
+			}
 
-	for _, field := range typ.Methods.List {
-		funcType, ok := field.Type.(*ast.FuncType)
-		if !ok {
+			newFuncDecls = append(newFuncDecls, funcDecl)
+		case *ast.Ident:
+			if v.Obj == nil {
+				panic("found embedded interface with no associated interface")
+			}
+
+			newFuncDecls = append(newFuncDecls, getFuncDecls(structObj, recvObj, v.Obj, funcDecls)...)
+		default:
+			fmt.Printf("%#v\n", v)
 			continue
 		}
-
-		funcDecl := &ast.FuncDecl{
-			Recv: &ast.FieldList{
-				List: []*ast.Field{
-					{
-						Names: []*ast.Ident{
-							{
-								Name: recvName,
-								Obj:  recvObj,
-							},
-						},
-						Type: &ast.StarExpr{
-							X: &ast.Ident{
-								Name: structName,
-								Obj:  structObj,
-							},
-						},
-					},
-				},
-			},
-			Name: &ast.Ident{
-				Name: field.Names[0].Name,
-				Obj:  nil,
-			},
-			Type: &ast.FuncType{
-				Params:  funcType.Params,
-				Results: funcType.Results,
-			},
-			Body: &ast.BlockStmt{
-				List: nil,
-			},
-		}
-
-		decls = append(decls, funcDecl)
 	}
 
-	return decls
-}
-
-func ConvertToFake() *ast.File {
-	return nil
+	return newFuncDecls
 }
