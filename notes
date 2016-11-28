@@ -1,0 +1,38 @@
+0xc42008a000 -> &ast.File{Doc:(*ast.CommentGroup)(nil), Package:2, Name:(*ast.Ident)(0xc42000e320), Decls:[]ast.Decl{(*ast.GenDecl)(0xc420014300)}, Scope:(*ast.Scope)(0xc42000a3a0), Imports:[]*ast.ImportSpec(nil), Unresolved:[]*ast.Ident(nil), Comments:[]*ast.CommentGroup(nil)}
+  0xc42000e320 -> &ast.Ident{NamePos:10, Name:"somepackage", Obj:(*ast.Object)(nil)}
+  0xc420014300 -> &ast.GenDecl{Doc:(*ast.CommentGroup)(nil), TokPos:23, Tok:84, Lparen:0, Specs:[]ast.Spec{(*ast.TypeSpec)(0xc420012330)}, Rparen:0}
+    0xc420012330 -> &ast.TypeSpec{Doc:(*ast.CommentGroup)(nil), Name:(*ast.Ident)(0xc42000e340), Type:(*ast.InterfaceType)(0xc42000e3a0), Comment:(*ast.CommentGroup)(nil)}
+      0xc42000e340 -> &ast.Ident{NamePos:28, Name:"Simple", Obj:(*ast.Object)(0xc420018140)}
+      0xc42000e3a0 -> &ast.InterfaceType{Interface:35, Methods:(*ast.FieldList)(0xc420012390), Incomplete:false}
+ -->    0xc420012390 -> &ast.FieldList{Opening:45, List:[]*ast.Field{(*ast.Field)(0xc4200142c0)}, Closing:52}
+          0xc4200142c0 -> &ast.Field{Doc:(*ast.CommentGroup)(nil), Names:[]*ast.Ident{(*ast.Ident)(0xc42000e360)}, Type:(*ast.FuncType)(0xc42000e380), Tag:(*ast.BasicLit)(nil), Comment:(*ast.CommentGroup)(nil)}
+            0xc42000e360 -> &ast.Ident{NamePos:48, Name:"A", Obj:(*ast.Object)(0xc420018190)}
+            0xc42000e380 -> &ast.FuncType{Func:0, Params:(*ast.FieldList)(0xc420012360), Results:(*ast.FieldList)(nil)}
+              0xc420012360 -> &ast.FieldList{Opening:49, List:[]*ast.Field(nil), Closing:50}
+
+0xc420018140 -> &ast.Object{Kind:3, Name:"Simple", Decl:(*ast.TypeSpec)(0xc420012330), Data:interface {}(nil), Type:interface {}(nil)}
+0xc420018190 -> &ast.Object{Kind:5, Name:"A", Decl:(*ast.Field)(0xc4200142c0), Data:interface {}(nil), Type:interface {}(nil)}
+---------------
+
+0xc42008a080 -> &ast.File{Doc:(*ast.CommentGroup)(nil), Package:3, Name:(*ast.Ident)(0xc42000e320), Decls:[]ast.Decl{(*ast.GenDecl)(0xc420014280), (*ast.FuncDecl)(0xc420012480)}, Scope:(*ast.Scope)(0xc42000a3a0), Imports:[]*ast.ImportSpec(nil), Unresolved:[]*ast.Ident(nil), Comments:[]*ast.CommentGroup(nil)}
+  0xc42000e320 -> &ast.Ident{NamePos:11, Name:"fakes", Obj:(*ast.Object)(nil)}
+
+  0xc420014280 -> &ast.GenDecl{Doc:(*ast.CommentGroup)(nil), TokPos:19, Tok:84, Lparen:0, Specs:[]ast.Spec{(*ast.TypeSpec)(0xc420012330)}, Rparen:0}
+    0xc420012330 -> &ast.TypeSpec{Doc:(*ast.CommentGroup)(nil), Name:(*ast.Ident)(0xc42000e340), Type:(*ast.StructType)(0xc42000e360), Comment:(*ast.CommentGroup)(nil)}
+      0xc42000e340 -> &ast.Ident{NamePos:24, Name:"FakeSimple", Obj:(*ast.Object)(0xc420018190)}
+      0xc42000e360 -> &ast.StructType{Struct:35, Fields:(*ast.FieldList)(0xc420012360), Incomplete:false}
+        0xc420012360 -> &ast.FieldList{Opening:42, List:[]*ast.Field(nil), Closing:45}
+
+  0xc420012480 -> &ast.FuncDecl{Doc:(*ast.CommentGroup)(nil), Recv:(*ast.FieldList)(0xc4200123c0), Name:(*ast.Ident)(0xc42000e3e0), Type:(*ast.FuncType)(0xc42000e420), Body:(*ast.BlockStmt)(0xc420012450)}
+--> 0xc4200123c0 -> &ast.FieldList{Opening:54, List:[]*ast.Field{(*ast.Field)(0xc4200142c0)}, Closing:69}
+      0xc4200142c0 -> &ast.Field{Doc:(*ast.CommentGroup)(nil), Names:[]*ast.Ident{(*ast.Ident)(0xc42000e380)}, Type:(*ast.StarExpr)(0xc42000e3c0), Tag:(*ast.BasicLit)(nil), Comment:(*ast.CommentGroup)(nil)}
+        0xc42000e380 -> &ast.Ident{NamePos:55, Name:"fs", Obj:(*ast.Object)(0xc4200181e0)}
+        0xc42000e3c0 -> &ast.StarExpr{Star:58, X:(*ast.Ident)(0xc42000e3a0)}
+          0xc42000e3a0 -> &ast.Ident{NamePos:59, Name:"FakeSimple", Obj:(*ast.Object)(0xc420018190)}
+    0xc42000e3e0 -> &ast.Ident{NamePos:71, Name:"A", Obj:(*ast.Object)(nil)} <--
+    0xc42000e420 -> &ast.FuncType{Func:49, Params:(*ast.FieldList)(0xc4200123f0), Results:(*ast.FieldList)(nil)}
+      0xc4200123f0 -> &ast.FieldList{Opening:72, List:[]*ast.Field(nil), Closing:73}
+    0xc420012450 -> &ast.BlockStmt{Lbrace:75, List:[]ast.Stmt(nil), Rbrace:78}
+
+  0xc420018190 -> &ast.Object{Kind:3, Name:"FakeSimple", Decl:(*ast.TypeSpec)(0xc420012330), Data:interface {}(nil), Type:interface {}(nil)}
+  0xc4200181e0 -> &ast.Object{Kind:4, Name:"fs", Decl:(*ast.Field)(0xc4200142c0), Data:interface {}(nil), Type:interface {}(nil)}

@@ -1,0 +1,23 @@
+features:
+* find the file an interface is in
+* generate a fake from the interface
+  * find the interface
+  * for each method in the interface, record each package identifier the method
+
+//  imports
+//  type MySpecialFake struct {}
+//  MyMethod()
+//  MyMethodCallCount()
+//  MyMethodArgsForCall()
+//  Invocations -> map[string][][]interface{}
+//  recordInvocation(string, []interface{})
+//  var _ fixtures.SomeInterface = new(MySpecialFake)
+
+types:
+  FakeMethod
+  - knows the name of the original method
+  - knows the args taken by the original method
+  - returns the same number and type as the original method
+
+
+need to know the package the interface was in to include it (why?)
