@@ -17,31 +17,20 @@ type FakifyOpts struct {
 }
 
 func Fakify(file *ast.File, opts FakifyOpts) *ast.File {
-	// find struct
 	var structType *ast.StructType
 	var obj *ast.Object
 	ast.Inspect(file, func(node ast.Node) bool {
-		if node == nil {
-			return true
+		if v, ok := node.(*ast.TypeSpec); ok {
+			if v.Name == nil || v.Name.Name != opts.StructName {
+				return true
+			}
+
+			if structType, ok = v.Type.(*ast.StructType); ok {
+				obj = v.Name.Obj
+				return false
+			}
 		}
-
-		v, ok := node.(*ast.TypeSpec)
-		if !ok {
-			return true
-		}
-
-		if v.Name != nil && v.Name.Name != opts.StructName {
-			return true
-		}
-
-		structType, ok = v.Type.(*ast.StructType)
-		if !ok {
-			return true
-		}
-
-		obj = v.Name.Obj
-
-		return false
+		return true
 	})
 
 	if structType == nil {
@@ -52,7 +41,6 @@ func Fakify(file *ast.File, opts FakifyOpts) *ast.File {
 		panic("no obj for typespec")
 	}
 
-	// find methods for struct
 	var funcDecls []*ast.FuncDecl
 	ast.Inspect(file, func(node ast.Node) bool {
 		if v, ok := node.(*ast.FuncDecl); ok {
@@ -76,6 +64,10 @@ func Fakify(file *ast.File, opts FakifyOpts) *ast.File {
 		privateName := privatize(funcDecl.Name.Name)
 		addMutexForFuncOnStruct(structType, privateName)
 		addArgsForCallForFuncOnStruct(structType, funcDecl, privateName)
+
+		if funcDecl.Type.Results.NumFields() > 0 {
+			addReturnsStructField(structType, funcDecl, privateName)
+		}
 	}
 
 	fset := token.NewFileSet()
@@ -103,8 +95,29 @@ func privatize(s string) string {
 	return string(unicode.ToLower(r)) + s[n:]
 }
 
+func addReturnsStructField(structType *ast.StructType, funcDecl *ast.FuncDecl, privateName string) {
+	var fields []*ast.Field
+	var i int
+	for _, field := range funcDecl.Type.Results.List {
+		i++
+		fields = append(fields, &ast.Field{
+			Type:  field.Type,
+			Names: []*ast.Ident{ast.NewIdent(fmt.Sprintf("result%d", i))},
+		})
+	}
+
+	structType.Fields.List = append(structType.Fields.List, &ast.Field{
+		Names: []*ast.Ident{ast.NewIdent(privateName + "Returns")},
+		Type: &ast.StructType{
+			Fields: &ast.FieldList{
+				List: fields,
+			},
+		},
+	})
+}
+
 func addArgsForCallForFuncOnStruct(structType *ast.StructType, funcDecl *ast.FuncDecl, privateName string) {
-	var elts []*ast.Field
+	var fields []*ast.Field
 	var i int
 	for _, field := range funcDecl.Type.Params.List {
 		for range field.Names {
@@ -116,7 +129,7 @@ func addArgsForCallForFuncOnStruct(structType *ast.StructType, funcDecl *ast.Fun
 				fieldType = field.Type
 			}
 
-			elts = append(elts, &ast.Field{
+			fields = append(fields, &ast.Field{
 				Type:  fieldType,
 				Names: []*ast.Ident{ast.NewIdent(fmt.Sprintf("arg%d", i))},
 			})
@@ -127,7 +140,9 @@ func addArgsForCallForFuncOnStruct(structType *ast.StructType, funcDecl *ast.Fun
 		Names: []*ast.Ident{ast.NewIdent(privateName + "ArgsForCall")},
 		Type: &ast.ArrayType{
 			Elt: &ast.StructType{
-				Fields: &ast.FieldList{List: elts},
+				Fields: &ast.FieldList{
+					List: fields,
+				},
 			},
 		},
 	})
@@ -144,44 +159,22 @@ func addMutexForFuncOnStruct(structType *ast.StructType, privateName string) {
 }
 
 func stubFuncOnStruct(structType *ast.StructType, funcDecl *ast.FuncDecl) {
-	params := &ast.FieldList{}
-	for _, field := range funcDecl.Type.Params.List {
-		var i int
-		if len(field.Names) > 0 {
-			// this path isn't hit if Structify is used; it removes multi-named fields
-			for range field.Names {
-				i++
-				params.List = append(params.List, &ast.Field{
-					Type: field.Type,
-				})
-			}
-		} else {
-			i++
-			params.List = append(params.List, &ast.Field{
-				Type: field.Type,
-			})
-		}
-	}
+	var singularizeFields = func(fl *ast.FieldList) *ast.FieldList {
+		result := &ast.FieldList{}
 
-	results := &ast.FieldList{}
-	if funcDecl.Type.Results != nil {
-		for _, field := range funcDecl.Type.Results.List {
-			var i int
-			if len(field.Names) > 0 {
-				// this path isn't hit if Structify is used; it removes named fields
+		if fl.NumFields() > 0 {
+			for _, field := range fl.List {
+				var i int
 				for range field.Names {
 					i++
-					results.List = append(results.List, &ast.Field{
+					result.List = append(result.List, &ast.Field{
 						Type: field.Type,
 					})
 				}
-			} else {
-				i++
-				results.List = append(results.List, &ast.Field{
-					Type: field.Type,
-				})
 			}
 		}
+
+		return result
 	}
 
 	structType.Fields.List = append(structType.Fields.List, &ast.Field{
@@ -189,8 +182,8 @@ func stubFuncOnStruct(structType *ast.StructType, funcDecl *ast.FuncDecl) {
 			ast.NewIdent(funcDecl.Name.Name + "Stub"), // missing Obj; necessary? would include Kind: var
 		},
 		Type: &ast.FuncType{
-			Params:  params,
-			Results: results,
+			Params:  singularizeFields(funcDecl.Type.Params),
+			Results: singularizeFields(funcDecl.Type.Results),
 		},
 	})
 }
