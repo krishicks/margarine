@@ -75,10 +75,9 @@ func Fakify(file *ast.File, opts FakifyOpts) *ast.File {
 
 		privateName := privatize(funcDecl.Name.Name)
 		addMutexForFuncOnStruct(structType, privateName)
+		addArgsForCallForFuncOnStruct(structType, funcDecl, privateName)
 	}
 
-	//   for each found method
-	//      add stubs to struct
 	fset := token.NewFileSet()
 	var buf bytes.Buffer
 	err := format.Node(&buf, fset, file)
@@ -102,6 +101,36 @@ func privatize(s string) string {
 	}
 	r, n := utf8.DecodeRuneInString(s)
 	return string(unicode.ToLower(r)) + s[n:]
+}
+
+func addArgsForCallForFuncOnStruct(structType *ast.StructType, funcDecl *ast.FuncDecl, privateName string) {
+	var elts []*ast.Field
+	var i int
+	for _, field := range funcDecl.Type.Params.List {
+		for range field.Names {
+			i++
+			var fieldType ast.Expr
+			if ellipsis, ok := field.Type.(*ast.Ellipsis); ok {
+				fieldType = &ast.ArrayType{Elt: ellipsis.Elt}
+			} else {
+				fieldType = field.Type
+			}
+
+			elts = append(elts, &ast.Field{
+				Type:  fieldType,
+				Names: []*ast.Ident{ast.NewIdent(fmt.Sprintf("arg%d", i))},
+			})
+		}
+	}
+
+	structType.Fields.List = append(structType.Fields.List, &ast.Field{
+		Names: []*ast.Ident{ast.NewIdent(privateName + "ArgsForCall")},
+		Type: &ast.ArrayType{
+			Elt: &ast.StructType{
+				Fields: &ast.FieldList{List: elts},
+			},
+		},
+	})
 }
 
 func addMutexForFuncOnStruct(structType *ast.StructType, privateName string) {
