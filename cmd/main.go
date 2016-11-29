@@ -1,42 +1,48 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
+	"go/token"
+	"io/ioutil"
 	"log"
+
+	"golang.org/x/tools/imports"
 
 	"github.com/krishicks/margarine"
 )
 
 func main() {
-	src := `
-	package somepackage
-
-	import (
-		"os"
-	)
-
-	type Simple interface {
-		A(a, b int) int
-		B() os.Signal
-		Embedded
-		io.Writer
-	}
-
-	type Embedded interface {
-		C()
-	}
-	`
-
 	opts := margarine.StructifyOpts{
-		InterfaceName: "Simple",
-		RecvName:      "f",
-		StructName:    "F",
-		PackageName:   "mypackage",
+		InterfaceName:      "Simple",
+		RecvName:           "f",
+		StructName:         "F",
+		PackageName:        "mypackage",
+		PreserveParamNames: true,
 	}
-	bs, err := margarine.Structify([]byte(src), opts)
+	src, err := ioutil.ReadFile("notes.go")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	fmt.Printf(string(bs))
+	f, err := margarine.Structify(src, opts)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	fset := token.NewFileSet()
+
+	var buf bytes.Buffer
+	err = format.Node(&buf, fset, f)
+	if err != nil {
+		panic(err)
+	}
+
+	out, err := imports.Process("src.go", buf.Bytes(), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf(string(out))
 }
