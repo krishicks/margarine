@@ -1,14 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"go/format"
+	"go/ast"
 	"go/token"
 	"io/ioutil"
 	"log"
-
-	"golang.org/x/tools/imports"
 
 	"github.com/krishicks/margarine"
 )
@@ -17,7 +13,7 @@ func main() {
 	opts := margarine.StructifyOpts{
 		InterfaceName:      "Simple",
 		RecvName:           "f",
-		StructName:         "F",
+		StructName:         "FakeSimple",
 		PackageName:        "mypackage",
 		PreserveParamNames: true,
 	}
@@ -32,17 +28,40 @@ func main() {
 	}
 
 	fset := token.NewFileSet()
+	ast.Print(fset, f)
 
-	var buf bytes.Buffer
-	err = format.Node(&buf, fset, f)
-	if err != nil {
-		panic(err)
-	}
+	margarine.Fakify(f, margarine.FakifyOpts{StructName: "FakeSimple"})
 
-	out, err := imports.Process("src.go", buf.Bytes(), nil)
-	if err != nil {
-		panic(err)
-	}
+	// -----------------
 
-	fmt.Printf(string(out))
+	// src := `
+	// package somepackage
+
+	// type SomeStruct struct {
+	// ScanStub  func(int) bool
+	// }
+	// `
+
+	// fset := token.NewFileSet()
+	// f, err := parser.ParseFile(fset, "src.go", src, parser.ParseComments)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// ast.Print(fset, f)
+	// -----------------
+	// fset := token.NewFileSet()
+
+	// var buf bytes.Buffer
+	// err = format.Node(&buf, fset, f)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// out, err := imports.Process("src.go", buf.Bytes(), nil)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// fmt.Printf(string(out))
 }
