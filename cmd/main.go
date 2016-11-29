@@ -1,8 +1,6 @@
 package main
 
 import (
-	"go/ast"
-	"go/token"
 	"io/ioutil"
 	"log"
 
@@ -27,8 +25,8 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	fset := token.NewFileSet()
-	ast.Print(fset, f)
+	// fset := token.NewFileSet()
+	// ast.Print(fset, f)
 
 	margarine.Fakify(f, margarine.FakifyOpts{StructName: "FakeSimple"})
 
