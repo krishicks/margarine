@@ -1,52 +1,66 @@
 package main
 
 import (
-	"io/ioutil"
-	"log"
-
-	"github.com/krishicks/margarine"
+	"go/ast"
+	"go/parser"
+	"go/token"
 )
 
 func main() {
-	opts := margarine.StructifyOpts{
-		InterfaceName:      "Simple",
-		RecvName:           "f",
-		StructName:         "FakeSimple",
-		PackageName:        "mypackage",
-		PreserveParamNames: true,
-	}
-	src, err := ioutil.ReadFile("notes.go")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	// opts := patrick.Opts{
+	// 	StructName:         "FakeSimple",
+	// 	PreserveParamNames: false,
+	// }
 
-	f, err := margarine.Structify(src, opts)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	// src, err := ioutil.ReadFile("notes.go")
+	// if err != nil {
+	// 	log.Fatal(err.Error())
+	// }
+
+	// genDecl, funcDecls, err := patrick.Pour(src, "Simple", opts)
+	// if err != nil {
+	// 	log.Fatal(err.Error())
+	// }
+
+	// decls := []ast.Decl{genDecl}
+	// for _, fd := range funcDecls {
+	// 	decls = append(decls, fd)
+	// }
+
+	// f := &ast.File{
+	// 	Name: &ast.Ident{
+	// 		Name: "mypackage",
+	// 	},
+	// 	Decls: decls,
+	// }
 
 	// fset := token.NewFileSet()
 	// ast.Print(fset, f)
 
-	margarine.Fakify(f, margarine.FakifyOpts{StructName: "FakeSimple"})
+	// margarine.Fakify(f, margarine.FakifyOpts{StructName: "FakeSimple"})
 
 	// -----------------
 
-	// src := `
-	// package somepackage
+	src := `
+	package somepackage
 
-	// type SomeStruct struct {
-	// ScanStub  func(int) bool
-	// }
-	// `
+	type SomeStruct struct {
+		ScanStub  func(int) bool
+	}
 
-	// fset := token.NewFileSet()
-	// f, err := parser.ParseFile(fset, "src.go", src, parser.ParseComments)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	func (s SomeStruct) A() int {
+		var a int
+		return a
+	}
+	`
 
-	// ast.Print(fset, f)
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "src.go", src, parser.ParseComments)
+	if err != nil {
+		panic(err)
+	}
+
+	ast.Print(fset, f)
 	// -----------------
 	// fset := token.NewFileSet()
 
